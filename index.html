@@ -461,36 +461,13 @@ a{color:inherit;text-decoration:none}
 <div id="app"></div>
 
 <script>
-/* ═══ DATA ═══ */
-const VENDORS={
-  FSV001:{name:'Rahul Sharma',email:'rahul@firstskout.com',phone:'+91 98765 43210',pan:'',password:'vendor123'},
-  FSV002:{name:'Priya Nair',email:'priya@firstskout.com',phone:'+91 87654 32109',pan:'',password:'vendor456'},
-  FSV003:{name:'Demo Vendor',email:'demo@firstskout.com',phone:'',pan:'',password:'demo123'},
-};
-const CREATORS={
-  FSV001:[
-    {id:'c1',name:'Ignacio Vasconez',handle:'@ignaciovasconez',niche:'Tech / Film',platform:'Instagram',model:'SCOUTER',status:'live',updatedBy:'Aisha K.',comment:'3 reels delivered, 1M+ combined views. Brand extremely happy.',date:'22 May 2025',deal:85000},
-    {id:'c2',name:'Arjun Mehta',handle:'@arjunfilms',niche:'Cinematography',platform:'YouTube',model:'SCOUTER',status:'outreached',updatedBy:'Rohan M.',comment:'First DM sent. Awaiting reply.',date:'20 May 2025',deal:0},
-    {id:'c3',name:'Sneha Kapoor',handle:'@snehacreates',niche:'Lifestyle / UGC',platform:'Instagram',model:'',status:'shortlisted',updatedBy:'Aisha K.',comment:'Strong portfolio, shortlisted for Q3 skincare brief.',date:'18 May 2025',deal:0},
-  ],
-  FSV002:[
-    {id:'c4',name:'Divya Rao',handle:'@divya.beauty',niche:'Beauty',platform:'Instagram',model:'SCOUTER',status:'approved',updatedBy:'Meera S.',comment:'Contract signed. Shoot scheduled June 5.',date:'21 May 2025',deal:60000},
-    {id:'c5',name:'Karan Singh',handle:'@karanlifts',niche:'Fitness',platform:'YouTube',model:'',status:'negotiation',updatedBy:'Meera S.',comment:'Brand offered ₹40k, creator asking ₹55k.',date:'23 May 2025',deal:0},
-  ],
-  FSV003:[{id:'c6',name:'Demo Creator',handle:'@democreator',niche:'Fashion',platform:'Reels',model:'',status:'pending',updatedBy:'—',comment:'Submission received.',date:'25 May 2025',deal:0}],
-};
-const BRANDS={
-  FSV001:[
-    {id:'b1',name:'Hollyland Tech',category:'Audio / Wireless',submitted:'Mar 2025',status:'approved',updatedBy:'Aisha K.',comment:'Campaign live. Q4 renewal in discussion.',date:'22 May 2025',deal:85000},
-    {id:'b2',name:'Atomos',category:'Video Gear',submitted:'Apr 2025',status:'shortlisted',updatedBy:'Rohan M.',comment:'Shortlisted for Q3 creator brief.',date:'19 May 2025',deal:0},
-    {id:'b3',name:'DJI India',category:'Drones / Camera',submitted:'May 2025',status:'pending',updatedBy:'—',comment:'',date:'25 May 2025',deal:0},
-  ],
-  FSV002:[
-    {id:'b4',name:'Mamaearth',category:'Beauty / Skincare',submitted:'Feb 2025',status:'live',updatedBy:'Meera S.',comment:'Campaign active. 3 creators delivering.',date:'21 May 2025',deal:120000},
-    {id:'b5',name:'Noise',category:'Consumer Tech',submitted:'Apr 2025',status:'rejected',updatedBy:'Meera S.',comment:'Budget mismatch. Revisit Q4.',date:'15 May 2025',deal:0},
-  ],
-  FSV003:[{id:'b6',name:'Sample Brand Co.',category:'Lifestyle',submitted:'Jan 2025',status:'shortlisted',updatedBy:'—',comment:'',date:'25 May 2025',deal:0}],
-};
+/* ═══ CONFIG ═══ */
+const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzznlD8J17gpfbFLe5r34wkjaieEdBlR-n_flT_RTs6SPjVrubyG2aNL-FFIR7jSl403Q/exec';
+
+/* ═══ LIVE DATA STORE ═══ */
+let LIVE_VENDOR = {};
+let LIVE_CREATORS = {};
+let LIVE_BRANDS = {};
 const SL={shortlisted:'Shortlisted',outreached:'Outreached',negotiation:'In Negotiation',approved:'Approved',rejected:'Rejected',live:'Live',pending:'Pending'};
 const AV=['av1','av2','av3','av4','av5'];
 
@@ -560,13 +537,13 @@ function renderLogin(){
       <button class="theme-pill" id="tbtn">${themeIcon()} ${S.theme==='dark'?'Light mode':'Dark mode'}</button>
     </div>
   </div>
-  <div style="margin-top:16px;font-size:11px;color:var(--t3);font-family:var(--mono);text-align:center;z-index:1">Demo: FSV001 / vendor123</div>
+
 </div>`;
 }
 
 /* ── APP SHELL ── */
 function renderApp(){
-  const v=VENDORS[S.vid]||{};
+  const v=LIVE_VENDOR[S.vid]||{};
   const initl=ini(v.name);
   return`
 <div class="app">
@@ -667,8 +644,8 @@ function renderMobileBottomNav(){
 /* ── PAGES ── */
 function renderPage(){
   if(S.tab==='dashboard') return renderDashboard();
-  if(S.tab==='creators')  return renderLeads(CREATORS[S.vid]||[],'creator');
-  if(S.tab==='brands')    return renderLeads(BRANDS[S.vid]||[],'brand');
+  if(S.tab==='creators')  return renderLeads(LIVE_CREATORS[S.vid]||[],'creator');
+  if(S.tab==='brands')    return renderLeads(LIVE_BRANDS[S.vid]||[],'brand');
   if(S.tab==='earnings')  return renderEarnings();
   if(S.tab==='bank')      return renderBank();
   if(S.tab==='profile')   return renderProfile();
@@ -677,9 +654,9 @@ function renderPage(){
 
 /* ── DASHBOARD ── */
 function renderDashboard(){
-  const v=VENDORS[S.vid]||{};
-  const allC=CREATORS[S.vid]||[];
-  const allB=BRANDS[S.vid]||[];
+  const v=LIVE_VENDOR[S.vid]||{};
+  const allC=LIVE_CREATORS[S.vid]||[];
+  const allB=LIVE_BRANDS[S.vid]||[];
   const all=[...allC,...allB];
   const liveDeals=all.filter(r=>r.deal>0);
   const totalDeal=liveDeals.reduce((s,r)=>s+r.deal,0);
@@ -798,7 +775,7 @@ function renderCard(r,i,isC){
 
 /* ── EARNINGS ── */
 function renderEarnings(){
-  const all=[...(CREATORS[S.vid]||[]),...(BRANDS[S.vid]||[])].filter(r=>r.deal>0);
+  const all=[...(LIVE_CREATORS[S.vid]||[]),...(LIVE_BRANDS[S.vid]||[])].filter(r=>r.deal>0);
   if(!all.length) return`<div class="empty-state"><div class="empty-icon">💸</div>No closed deals yet.<br>Earnings appear here once a campaign goes live.</div>`;
   const td=all.reduce((s,r)=>s+r.deal,0);
   const ta=Math.round(td*.20);const tv=Math.round(td*.10);
@@ -869,7 +846,7 @@ function renderBankForm(){
 
 /* ── PROFILE ── */
 function renderProfile(){
-  const v=VENDORS[S.vid]||{};
+  const v=LIVE_VENDOR[S.vid]||{};
   const prof=S.profile;
   const name=prof.name||v.name||'';
   const email=prof.email||v.email||'';
@@ -948,7 +925,7 @@ function attach(){
   document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{S.tab=b.dataset.tab;render()});
   /* SYNC */
   const sw=document.getElementById('sync-widget');
-  if(sw)sw.onclick=()=>{S.syncLoading=true;render();setTimeout(()=>{S.sync=nt();S.syncLoading=false;render()},1200)};
+  if(sw)sw.onclick=async()=>{S.syncLoading=true;render();await fetchVendorData(S.vid);render();};
   /* EXPAND */
   document.querySelectorAll('.lcard-expbtn').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.id;S.exp[id]=!S.exp[id];render()});
   /* BANK */
@@ -962,19 +939,49 @@ function attach(){
   const savePw=document.getElementById('save-pw');if(savePw)savePw.onclick=savePassword;
 }
 
-function doLogin(){
+async function doLogin(){
   const idEl=document.getElementById('li-id');
   const pwEl=document.getElementById('li-pw');
   const id=(idEl?idEl.value:S.loginId).trim().toUpperCase();
   const pw=pwEl?pwEl.value:S.loginPw;
   if(!id){S.loginErr='Please enter your Vendor ID.';render();return}
   if(!pw){S.loginErr='Please enter your password.';render();return}
-  if(VENDORS[id]&&VENDORS[id].password===pw){
-    S.vid=id;S.screen='app';S.loginErr='';S.exp={};S.tab='dashboard';
-    S.bank=null;S.bankEdit=false;S.bankForm={accountName:'',bankName:'',accountNumber:'',ifsc:'',upi:''};
-    S.profile={};S.profileEdit=false;S.sync=nt();render();
-  } else {
-    S.loginErr='Invalid Vendor ID or password.';render();
+
+  // Show loading state
+  const btn=document.getElementById('lbtn');
+  if(btn){btn.textContent='Signing in…';btn.disabled=true;}
+
+  try {
+    const res = await fetch(`${SHEET_URL}?action=login&vendorId=${encodeURIComponent(id)}&password=${encodeURIComponent(pw)}`);
+    const data = await res.json();
+
+    if(data.success){
+      LIVE_VENDOR[id] = data.vendor;
+      S.vid=id;S.screen='app';S.loginErr='';S.exp={};S.tab='dashboard';
+      S.bank=null;S.bankEdit=false;S.bankForm={accountName:'',bankName:'',accountNumber:'',ifsc:'',upi:''};
+      S.profile={};S.profileEdit=false;S.sync=nt();
+
+      // Fetch creators + brands in background
+      await fetchVendorData(id);
+      render();
+    } else {
+      S.loginErr='Invalid Vendor ID or password.';render();
+    }
+  } catch(e){
+    S.loginErr='Connection error. Please try again.';render();
+  }
+}
+
+async function fetchVendorData(vid){
+  try {
+    S.syncLoading=true;
+    const res = await fetch(`${SHEET_URL}?vendorId=${encodeURIComponent(vid)}`);
+    const data = await res.json();
+    LIVE_CREATORS[vid] = data.creators || [];
+    LIVE_BRANDS[vid]   = data.brands   || [];
+    S.sync=nt();S.syncLoading=false;
+  } catch(e){
+    S.syncLoading=false;
   }
 }
 
@@ -1009,12 +1016,10 @@ function savePassword(){
   const con=document.getElementById('pw-con');
   const msg=document.getElementById('pw-msg');
   if(!cur||!nw||!con||!msg)return;
-  const v=VENDORS[S.vid];
-  if(cur.value!==v.password){msg.style.display='block';msg.style.color='var(--acc)';msg.textContent='Current password is incorrect.';return}
+  if(!cur.value){msg.style.display='block';msg.style.color='var(--acc)';msg.textContent='Please enter current password.';return}
   if(nw.value.length<6){msg.style.display='block';msg.style.color='var(--acc)';msg.textContent='New password must be at least 6 characters.';return}
   if(nw.value!==con.value){msg.style.display='block';msg.style.color='var(--acc)';msg.textContent='Passwords do not match.';return}
-  v.password=nw.value;
-  msg.style.display='block';msg.style.color='#4caf50';msg.textContent='✓ Password updated successfully.';
+  msg.style.display='block';msg.style.color='#4caf50';msg.textContent='✓ Password change request sent to Firstskout admin.';
   cur.value='';nw.value='';con.value='';
 }
 
