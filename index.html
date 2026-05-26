@@ -684,7 +684,7 @@ let S={
   bankForm:{accountName:'',bankName:'',accountNumber:'',ifsc:'',upi:''},
   profile:{},profileEdit:false,
   sync:nt(),syncLoading:false,
-  agencyPct:20,vendorPct:10,earningsType:'commission',
+  agencyPct:20,vendorPct:10,earningsType:'commission',_vendorPctOverride:false,
 };
 
 function nt(){return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
@@ -967,7 +967,10 @@ function renderCard(r,i,isC){
           <div>
             <div class="lcard-name">${r.name}</div>
             <div class="lcard-sub">${isC?r.handle:r.category}</div>
-            ${isC&&r.model?`<div class="model-tag">${r.model}</div>`:''}
+            <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">
+              ${isC&&r.model?`<div class="model-tag">${r.model}</div>`:''}
+              ${r.campaign?`<div class="model-tag" style="background:rgba(96,165,250,.12);color:#60a5fa;border-color:rgba(96,165,250,.2)">${r.campaign}</div>`:''}
+            </div>
           </div>
         </div>
         <div class="st s-${r.status}"><div class="sd"></div>${SL[r.status]||r.status}</div>
@@ -992,6 +995,7 @@ function renderCard(r,i,isC){
         <div><div class="ef-l">Updated by</div><div class="ef-v">${r.updatedBy}</div></div>
         <div><div class="ef-l">Status</div><div class="ef-v">${SL[r.status]||r.status}</div></div>
         <div><div class="ef-l">Date</div><div class="ef-v">${r.date}</div></div>
+        ${r.campaign?`<div style="grid-column:1/-1"><div class="ef-l">Campaign</div><div class="ef-v" style="color:#60a5fa;font-weight:600">${r.campaign}</div></div>`:''}
         ${r.comment?`<div style="grid-column:1/-1"><div class="ef-l">Comment</div><div class="ef-comment">${r.comment}</div></div>`:''}
       </div>
       ${r.deal>0?`<div class="deal-row">
@@ -1216,7 +1220,11 @@ async function fetchVendorData(vid){
     const data=await res.json();
     LIVE_CREATORS[vid]=data.creators||[];
     LIVE_BRANDS[vid]=data.brands||[];
-    if(data.settings){S.agencyPct=data.settings.agency_fee_pct||20;S.vendorPct=data.settings.vendor_share_pct||10}
+    // Only apply global settings if vendor has no per-vendor override
+    if(data.settings&&S.earningsType==='commission'){
+      if(!S._vendorPctOverride) S.agencyPct=data.settings.agency_fee_pct||20;
+      if(!S._vendorPctOverride) S.vendorPct=data.settings.vendor_share_pct||10;
+    }
     S.sync=nt();S.syncLoading=false;
   } catch(e){S.syncLoading=false}
 }
