@@ -1422,19 +1422,38 @@ function renderLeads(type, rows) {
           ${f.label}<span class="filter-cnt">${f.count}</span>
         </button>`).join('')}
     </div>
+    <div class="search-wrap">
+      <span class="search-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </span>
+      <input class="search-inp" id="leadsSearch" placeholder="Search by name, handle, niche…" oninput="searchLeads('${type}',this.value)" autocomplete="off" spellcheck="false">
+      <span class="search-clear" id="searchClear" onclick="clearSearch('${type}')">✕</span>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <span class="search-count" id="searchCount">${rows.length} ${type}s</span>
   </div>
   <div class="leads-list" id="leadsList">
     ${rows.map(r => renderLeadCard(r, type)).join('')}
   </div>`;
 }
 
-function renderLeadCard(r, type) {
+function hlText(str, term) {
+  if (!term || !str) return str||'';
+  const idx = str.toLowerCase().indexOf(term.toLowerCase());
+  if (idx < 0) return str;
+  return str.slice(0,idx) + '<mark class="search-hl">' + str.slice(idx, idx+term.length) + '</mark>' + hlText(str.slice(idx+term.length), term);
+}
+
+function renderLeadCard(r, type, hl='') {
   const isCreator = type === 'creator';
-  const name = isCreator ? (r.name||r.creatorName||'—') : (r.brandName||r.name||'—');
-  const sub = isCreator ? (r.handle||'') : (r.category||'');
-  const meta = isCreator ? `${r.platform||''} · ${r.niche||''}` : `${r.category||''} · ${r.campaign||''}`;
+  const name = hlText(isCreator ? (r.name||r.creatorName||'—') : (r.brandName||r.name||'—'), hl);
+  const sub = hlText(isCreator ? (r.handle||'') : (r.category||''), hl);
+  const rawNiche = isCreator ? (r.niche||'') : (r.category||'');
+  const rawPlatform = r.platform||'';
+  const meta = isCreator ? `${hlText(rawPlatform,hl)} · ${hlText(rawNiche,hl)}` : `${hlText(r.category||'',hl)} · ${hlText(r.campaign||'',hl)}`;
   const dealLabel = r.deal > 0 ? fmtRs(r.deal) : '';
-  const campaign = r.campaign || r.campaignName || '';
+  const campaign = hlText(r.campaign || r.campaignName || '', hl);
 
   return `
   <div class="lead-card" id="lc-${r.id}" data-status="${r.status||''}">
@@ -1481,15 +1500,75 @@ function toggleLead(id) {
   el.classList.toggle('open');
 }
 
+// track active filter per type
+const _activeFilter = {};
+
 function filterLeads(key, type) {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   event.currentTarget.classList.add('active');
+  _activeFilter[type] = key;
+  const q = (document.getElementById('leadsSearch')||{}).value || '';
+  applyLeadsFilter(type, key, q);
+}
+
+function searchLeads(type, q) {
+  const key = _activeFilter[type] || 'all';
+  const clear = document.getElementById('searchClear');
+  if (clear) clear.classList.toggle('show', q.length > 0);
+  applyLeadsFilter(type, key, q);
+}
+
+function clearSearch(type) {
+  const inp = document.getElementById('leadsSearch');
+  if (inp) { inp.value = ''; inp.focus(); }
+  const clear = document.getElementById('searchClear');
+  if (clear) clear.classList.remove('show');
+  applyLeadsFilter(type, _activeFilter[type]||'all', '');
+}
+
+function applyLeadsFilter(type, key, q) {
   const rows = type === 'creator' ? (appData.creators||[]) : (appData.brands||[]);
-  const filtered = key === 'all' ? rows :
+
+  // status filter
+  let filtered = key === 'all' ? rows :
     key === 'pipeline' ? rows.filter(r=>['shortlisted','outreached'].includes(r.status)) :
     rows.filter(r=>r.status===key);
-  document.getElementById('leadsList').innerHTML = filtered.map(r=>renderLeadCard(r,type)).join('') ||
-    `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No ${key} leads</div></div>`;
+
+  // search filter
+  const term = q.trim().toLowerCase();
+  if (term) {
+    filtered = filtered.filter(r => {
+      const name = (r.name||r.brandName||r.creatorName||'').toLowerCase();
+      const handle = (r.handle||'').toLowerCase();
+      const niche = (r.niche||'').toLowerCase();
+      const platform = (r.platform||'').toLowerCase();
+      const campaign = (r.campaign||r.campaignName||'').toLowerCase();
+      const category = (r.category||'').toLowerCase();
+      const comment = (r.comment||'').toLowerCase();
+      return name.includes(term) || handle.includes(term) || niche.includes(term) ||
+             platform.includes(term) || campaign.includes(term) || category.includes(term) ||
+             comment.includes(term);
+    });
+  }
+
+  // update count
+  const cnt = document.getElementById('searchCount');
+  if (cnt) {
+    if (term || key !== 'all') {
+      cnt.textContent = `${filtered.length} of ${rows.length} ${type}s${term ? ' matching "'+q+'"' : ''}`;
+    } else {
+      cnt.textContent = `${rows.length} ${type}s`;
+    }
+  }
+
+  // render with highlights
+  const list = document.getElementById('leadsList');
+  if (!list) return;
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No results found</div><div class="empty-sub">Try a different name, handle or status filter.</div></div>`;
+    return;
+  }
+  list.innerHTML = filtered.map(r => renderLeadCard(r, type, term)).join('');
 }
 
 /* ═══════════════════════════════════════
